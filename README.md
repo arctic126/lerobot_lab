@@ -1,12 +1,21 @@
-# Install
-Create a virtual environment with Python 3.10 and activate it, e.g. with [`miniconda`](https://docs.anaconda.com/free/miniconda/index.html):
+# 霞智机器人数据采集
+
+---
+
+## 安装
+
+### 虚拟环境
+
 ```bash
-conda create -y -n lerobot python=3.10
-conda activate lerobot
+conda create -n jakalerobot python=3.10
+conda activate jakalerobot
 ```
 
-Install 🤗 LeRobot:
+### Lerobot安装
+
 ```bash
+git clone https://github.com/arctic126/lerobot_lab.git
+cd lerobot_lab
 pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 pip uninstall numpy
@@ -14,114 +23,153 @@ pip install numpy==1.26.0
 pip install pynput
 ```
 
-/!\ For Linux only, ffmpeg and opencv requires conda install for now. Run this exact sequence of commands:
-```bash
+对于Linux系统，额外运行：
+
+```
 conda install -c conda-forge ffmpeg
 pip uninstall opencv-python
 conda install "opencv>=4.10.0"
 ```
 
-Install Piper:  
+### Jaka安装
+
+下载路径https://www.jaka.com/prod-api/common/download/resource?resource=%2Fprofile%2Fupload%2F2024%2F11%2F21%2F20241121111728A003.tar
+
+Linux需要将libjakaAPI.so和jkrc.so 放在同一个文件夹下，并添加当前文件夹路径到环境变量，
+
 ```bash
-pip install python-can
-pip install piper_sdk
-sudo apt update && sudo apt install can-utils ethtool
-pip install pygame
+export LD_LIBRARY_PATH=/xx/xx/
 ```
 
-# piper集成lerobot
-见lerobot_piper_tutorial/1. 🤗 LeRobot：新增机械臂的一般流程.pdf
+同时将so文件放到conda对应env路径下。
 
-# Teleoperate
+### ForceUMI安装
+
 ```bash
-cd piper_scripts/
-bash can_activate.sh can0 1000000
+git clone https://github.com/arctic126/ForceUMI.git
+cd ForceUMI
+pip install -e .
+```
 
+---
+
+### PyTracker安装
+
+```bash
+git clone https://github.com/arctic126/PyTracker.git
+cd PyTracker
+pip install -e .
 cd ..
-python lerobot/scripts/control_robot.py \
-    --robot.type=piper \
-    --robot.inference_time=false \
-    --control.type=teleoperate
 ```
 
-# Record
-Set dataset root path
-```bash
-HF_USER=$PWD/data
-echo $HF_USER
+**说明：**
+
+需要安装 **SteamVR**
+
+后修改配置文件
+
+```
+gedit ~/.steam/steam/steamapps/common/SteamVR/resources/settings/default.vrsettings
 ```
 
+将第三行的 `"requireHmd" : true,` 改为 `"requireHmd" : false,` 保存并退出设置文件。
+
+---
+
+### PyForce安装
+
 ```bash
-python lerobot/scripts/control_robot.py \
-    --robot.type=piper \
-    --robot.inference_time=false \
-    --control.type=record \
-    --control.fps=30 \
-    --control.single_task="move" \
-    --control.repo_id=${HF_USER}/test \
-    --control.num_episodes=2 \
-    --control.warmup_time_s=2 \
-    --control.episode_time_s=10 \
-    --control.reset_time_s=10 \
-    --control.play_sounds=true \
-    --control.push_to_hub=false
+git clone https://github.com/arctic126/PyForce.git
+cd PyForce
+pip install -e .
+cd ..
 ```
 
-Press right arrow -> at any time during episode recording to early stop and go to resetting. Same during resetting, to early stop and to go to the next episode recording.  
-Press left arrow <- at any time during episode recording or resetting to early stop, cancel the current episode, and re-record it.  
-Press escape ESC at any time during episode recording to end the session early and go straight to video encoding and dataset uploading.  
+**说明：**
 
-# visualize
-```bash
-python lerobot/scripts/visualize_dataset.py \
-    --repo-id ${HF_USER}/test \
-    --episode-index 0
+* 需要 Sunrise（宇立）六轴力/力矩传感器
+* 通过 TCP/IP 与主机通信
+
+---
+
+### TAVLA安装
+
+1. 克隆仓库（包含子模块）
+
+```
+git clone --recurse-submodules https://github.com/arctic126/TA-VLA.git
+cd TA-VLA
 ```
 
-# Replay
-```bash
-python lerobot/scripts/control_robot.py \
-    --robot.type=piper \
-    --robot.inference_time=false \
-    --control.type=replay \
-    --control.fps=30 \
-    --control.repo_id=${HF_USER}/test \
-    --control.episode=0
+2. 安装依赖
+
+该项目使用 `uv` 进行环境与依赖管理，并默认跳过 Git LFS 自动拉取大文件：
+
+```
+GIT_LFS_SKIP_SMUDGE=1 uv sync
+GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```
 
-# Caution
+需要注意，该虚拟环境中同时需要再次Lerobot安装
 
-1. In lerobots/common/datasets/video_utils, the vcodec is set to **libopenh264**, please find your vcodec by **ffmpeg -codecs**
-
-
-# Train
-具体的训练流程见lerobot_piper_tutorial/2. 🤗 AutoDL训练.pdf
 ```bash
-python lerobot/scripts/train.py \
-  --dataset.repo_id=${HF_USER}/jack \
-  --policy.type=act \
-  --output_dir=outputs/train/act_jack \
-  --job_name=act_jack \
-  --device=cuda \
-  --wandb.enable=true
-``` 
+cd TA-VLA
+source .venv/bin/activate
+```
 
+进入虚拟环境后再次执行Lerobot的安装
 
-# Inference
-还是使用control_robot.py中的record loop，配置 **--robot.inference_time=true** 可以将手柄移出。
+## 快速开始
+
+### 1. 启动 GUI 数据采集程序
+
 ```bash
-python lerobot/scripts/control_robot.py \
-    --robot.type=piper \
-    --robot.inference_time=true \
-    --control.type=record \
-    --control.fps=30 \
-    --control.single_task="move" \
-    --control.repo_id=$USER/eval_act_jack \
-    --control.num_episodes=1 \
-    --control.warmup_time_s=2 \
-    --control.episode_time_s=30 \
-    --control.reset_time_s=10 \
-    --control.push_to_hub=false \
-    --control.policy.path=outputs/train/act_koch_pick_place_lego/checkpoints/latest/pretrained_model
+python -m forceumi.gui.cv_main_window
+```
+
+或使用示例启动脚本：
+
+```bash
+python examples/launch_gui.py
+```
+
+#### 键盘快捷键说明
+
+* `C`：连接设备
+* `D`：断开设备
+* `S`：开始采集
+* `E`：停止并保存当前 episode
+* `Q`：退出程序
+
+---
+
+### 2.模型运行方式
+
+先在Lerobot的config中调整为力传感器、机器人IP以及摄像头编号。
+
+模型运行方式：
+
+开启模型：
+
+```bash
+cd TA-VLA
+uv run scripts/serve_policy.py policy:checkpoint \
+    --policy.config pi0_lora_favla \
+    --policy.dir /path/to/ckpt
+```
+
+另外打开终端
+
+```
+cd lerobot_lab
+python eval_jaka_tavla.py \
+    --server_host localhost \
+    --server_port 8000 \
+    --robot_ip <robotip> \
+    --force_ip 192.168.0.108 \
+    --camera_index <cameraindex> \
+    --task_prompt "clean the basin" \
+    --max_steps 500 \
+    --frequency 10
 ```
 
