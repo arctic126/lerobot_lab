@@ -124,6 +124,7 @@ source .venv/bin/activate
 ### 1. 启动 GUI 数据采集程序
 
 ```bash
+# 在ForceUMI/路径下
 python -m forceumi.gui.cv_main_window
 ```
 
@@ -143,7 +144,43 @@ python examples/launch_gui.py
 
 ---
 
-### 2.模型运行方式
+### 2. 将数据转换为 LeRobot 格式
+
+可将 ForceUMI 采集的数据转换为 **LeRobot** 所使用的数据格式，便于VLA训练。
+
+
+```bash
+# 在ForceUMI路径下
+python convert_forceumi_to_lerobot.py \
+  --data_dir data/session_20250118_143000 \
+  --output_repo_id username/forceumi-task1 \
+  --task "clean the basin" \
+  --target_size 224 224
+```
+
+参数说明：
+
+* `--data_dir`：ForceUMI 采集的 session 目录
+* `--output_repo_id`：LeRobot 数据集仓库 ID
+* `--task`：任务描述
+* `--target_size`：图像 resize 尺寸
+
+---
+
+### 3. 可视化LeRobot数据集
+
+
+
+```bash
+# 在xiazhi_lerobot_lab路径下
+python lerobot/scripts/visualize_dataset_html.py \
+    --repo-id username/forceumi-task1 \
+```
+
+
+---
+
+### 4.模型部署方式
 
 先在Lerobot的config中调整为力传感器、机器人IP以及摄像头编号。
 
